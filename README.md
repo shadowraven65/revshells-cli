@@ -17,4 +17,5 @@ Usage of revshells:
   -s string
         the shell to use (default "bash")
 ```
-This code was created for Kali specifically to speed up rev shells for HTB and then turned into this
+This code was created for Kali specifically to speed up rev shells for HTB and then turned into this.  
+NOTE: I have not done any other testing besides on Kali with Xfce for now and you will need to install something like xclip for the clipboard option to work.  
