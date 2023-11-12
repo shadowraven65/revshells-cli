@@ -10,6 +10,8 @@ Usage of revshells:
         the IP address (default "tun0")
   -l string
         Type of listener (nc, msf, pwncat)
+  -mode string
+        Mode for listener (gui/cli) (default "gui")
   -p string
         the port number (default "4444")
   -r string
