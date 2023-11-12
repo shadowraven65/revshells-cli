@@ -1,7 +1,8 @@
 ## Config File Support
 The script supports the use of a json config file so you can choose what kind of terminal to use for GUI or multiplexer for cli when starting a listener.  
 It also allows you to bring your own custom shells if you have any and they will append onto the main list.  
-Config location is expected to be in `~/.config/revshells-cli.json`
+Config location is expected to be in `~/.config/revshells-cli.json`  
+If you dont supply a config file it will default to x-terminal-emulator and tmux
 ### Examples
 ```
 {
