@@ -1,7 +1,7 @@
-# GoReverseShell: A Reverse Shell Command Generator and Listener Manager
+# revshell-cli: A Reverse Shell Command Generator and Listener Manager
 
 ## Description
-GoReverseShell is a versatile tool designed for cybersecurity professionals. It generates customizable reverse shell commands, supports multiple encoding options, and manages listeners in different modes (CLI/GUI). It can handle various shell types and listeners such as Netcat, Metasploit, and pwncat. It also features automatic IP address fetching from network interfaces.  
+revshell-cli is a versatile tool designed for cybersecurity professionals. It generates customizable reverse shell commands, supports multiple encoding options, and manages listeners in different modes (CLI/GUI). It can handle various shell types and listeners such as Netcat, Metasploit, and pwncat. It also features automatic IP address fetching from network interfaces. It was inspired by revshells.com.  
 NOTE: I have not done any other testing besides on Kali with Xfce for now and you will need to install something like xclip for the clipboard option to work. 
 
 ## Usage
