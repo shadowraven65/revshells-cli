@@ -39,22 +39,22 @@ Usage of revshells-cli:
 ## Usage
 - **Generate Reverse Shell Commands:**
   ```
-  ./GoReverseShell -s bash -i tun0 -p 4444 -r bash
+  ./revshells-cli -s bash -i tun0 -p 4444 -r bash
   ```
 
 - **Set Up Listeners (examples):**
   - **CLI will open in multiplexer where GUI will open in new terminal emulator**
   - Netcat:
     ```
-    ./GoReverseShell -l nc -mode cli
+    ./revshells-cli -l nc -mode cli
     ```
   - Metasploit:
     ```
-    ./GoReverseShell -l msf -mode gui
+    ./revshells-cli -l msf -mode gui
     ```
   - pwncat:
     ```
-    ./GoReverseShell -l pwncat -mode cli
+    ./revshells-cli -l pwncat -mode cli
     ```
 
 ## Features
