@@ -220,6 +220,7 @@ func main() {
         ip := flag.String("i", "tun0", "the IP address")
         port := flag.String("p", "4444", "the port number")
         revShell := flag.String("r", "bash", "Choose the reverse shell format")
+        quietMode := flag.Bool("q", false, "Only output the shell code to stdout for use in other scripts\nIgnores -l flag if used")
         
         flag.Parse()
         if *listShells {
@@ -232,8 +233,12 @@ func main() {
         }
         shellTemplate, exists := shellFormatMap[*revShell]
         if !exists {
-            fmt.Println(colorRed + "[-]" + colorReset + "Invalid reverse shell format specified\nList shells with -L")
-            return
+            if *quietMode {
+                fmt.Println("INVALID REVSHELL NAME")
+            } else {
+                fmt.Println(colorRed + "[-]" + colorReset + "Invalid reverse shell format specified\nList shells with -L")
+                return
+            }
         }
         if *listShells {
             listShellsInColumns(shellFormatMap)
@@ -250,15 +255,21 @@ func main() {
         case "urlenc":
             shellTemplate = urlEncode(shellTemplate)
         }
-        fmt.Println(colorRed + "============ SHELL CODE ============" + colorReset)
-        fmt.Println(shellTemplate)
-        fmt.Println(colorRed + "====================================" + colorReset)
-        err = clipboard.WriteAll(shellTemplate)
-        if err != nil {
-            fmt.Println("Failed to copy to clipboard:", err)
-            return
+        if *quietMode {
+            empty := ""
+            listenerType = &empty
+            fmt.Println(shellTemplate)
+        } else {
+            fmt.Println(colorRed + "============ SHELL CODE ============" + colorReset)
+            fmt.Println(shellTemplate)
+            fmt.Println(colorRed + "====================================" + colorReset)
+            err = clipboard.WriteAll(shellTemplate)
+            if err != nil {
+                fmt.Println("Failed to copy to clipboard:", err)
+                return
+            }
+            fmt.Println(colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
         }
-        fmt.Println(colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
         if *listenerType != "" {
             var command string          
             switch *listenerType {
