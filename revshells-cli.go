@@ -219,7 +219,6 @@ func main() {
         // Load the configuration
         config, err := loadConfig(configPath)
         if err != nil {
-            fmt.Fprintln(os.Stderr,colorRed + "[-]" + colorReset + " No config file found or error in reading. Using default settings.")
             config = &Config{
                 GuiListener: "x-terminal-emulator -e", // Default values
                 CliListener: "tmux new -d -s {session}",
