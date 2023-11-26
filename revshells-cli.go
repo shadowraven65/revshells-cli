@@ -19,6 +19,8 @@ import (
     "log"
 )
 
+var version = "dev" // default value
+
 type Config struct {
     GuiListener   string           `json:"gui_listener"`
     CliListener   string           `json:"cli_listener"`
@@ -44,17 +46,17 @@ func loadConfig(configPath string) (*Config, error) {
 func getTun0IP() string {
     iface, err := net.InterfaceByName("tun0")
     if err != nil {
-        fmt.Fprintln(os.Stderr,colorRed + "[-]" + colorReset + " No IP provided and could not find tun0. Trying eth0")
+        fmt.Fprintln(os.Stderr, colorRed + "[-]" + colorReset + " No IP provided and could not find tun0. Trying eth0")
         iface, err = net.InterfaceByName("eth0")
         if err != nil {
-            fmt.Fprintln(os.Stderr,colorRed + "[-]" + colorReset + " No IP provided and could not find eth0. Using localhost.")
+            fmt.Fprintln(os.Stderr, colorRed + "[-]" + colorReset + " No IP provided and could not find eth0. Using localhost.")
             return "127.0.0.1"
         }
     }
     
     addrs, err := iface.Addrs()
     if err != nil || len(addrs) == 0 {
-        fmt.Fprintln(os.Stderr,colorRed + "[-]" + colorReset + " Could not get addresses for interface. Using localhost.")
+        fmt.Fprintln(os.Stderr, colorRed + "[-]" + colorReset + " Could not get addresses for interface. Using localhost.")
         return "127.0.0.1"
     }
     
@@ -228,6 +230,8 @@ func main() {
         for key, value := range config.CustomShells {
             shellFormatMap[key] = value
         }
+        var showVersion bool
+        flag.BoolVar(&showVersion, "v", false, "Show version and exit")
         listShells := flag.Bool("L", false, "List all available shells")
         listenerMode := flag.String("mode", "gui", "Mode for listener (gui/cli)")
         listenerType := flag.String("l", "", "Type of listener (nc, msf, pwncat)")
@@ -239,6 +243,10 @@ func main() {
         quietMode := flag.Bool("q", false, "Only output the shell code to stdout for use in other scripts\nIgnores -l flag if used")
         
         flag.Parse()
+        if showVersion {
+            fmt.Println(version)
+            return
+        }
         if *listShells {
             listShellsInColumns(shellFormatMap)
             return
@@ -281,13 +289,13 @@ func main() {
         } else {
             fmt.Fprintln(os.Stderr, colorRed + "============ SHELL CODE ============" + colorReset)
             fmt.Println(shellTemplate)
-            fmt.Fprintln(os.Stderr,colorRed + "====================================" + colorReset)
+            fmt.Fprintln(os.Stderr, colorRed + "====================================" + colorReset)
             err = clipboard.WriteAll(shellTemplate)
             if err != nil {
-                fmt.Fprintln(os.Stderr,"Failed to copy to clipboard:", err)
+                fmt.Fprintln(os.Stderr, "Failed to copy to clipboard:", err)
                 return
             }
-            fmt.Fprintln(os.Stderr,colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
+            fmt.Fprintln(os.Stderr, colorGreen + "[+]" + colorReset + " Reverse shell code copied to clipboard.")
         }
         if *listenerType != "" {
             var command string          
@@ -321,7 +329,7 @@ func main() {
             case "pwncat":
                 command = fmt.Sprintf("python3 -m pwncat -l %s -p %s", *ip, *port)
             default:
-                fmt.Fprintln(os.Stderr,colorRed + "[-]" + colorReset + " Invalid listener type specified")
+                fmt.Fprintln(os.Stderr, colorRed + "[-]" + colorReset + " Invalid listener type specified")
                 return
             }
 
@@ -331,23 +339,23 @@ func main() {
                 sessionName := "listener_" + randomSuffix
                 multiplexer := strings.Replace(config.CliListener, "{session}", sessionName, -1)
                 command = fmt.Sprintf("%s %s", multiplexer, command)
-                fmt.Fprintln(os.Stderr,colorGreen + "[+]" + colorReset + " Running: "+command)
+                fmt.Fprintln(os.Stderr, colorGreen + "[+]" + colorReset + " Running: "+command)
             } else {
                 // Default is x-terminal-emulator, make config file and change if wished
                 command = fmt.Sprintf("%s '%s'", config.GuiListener, command)
-                fmt.Fprintln(os.Stderr,colorGreen + "[+]" + colorReset + " Running: "+command)
+                fmt.Fprintln(os.Stderr, colorGreen + "[+]" + colorReset + " Running: "+command)
             }
             // Execute the command
             cmd := exec.Command("bash", "-c", command)
             err := cmd.Start()
             if err != nil {
-                fmt.Fprintf(os.Stderr,colorRed + "[-]" + colorReset + " Failed to start listener: %v\n", err)
+                fmt.Fprintf(os.Stderr, colorRed + "[-]" + colorReset + " Failed to start listener: %v\n", err)
                 return
             }
             if *listenerMode == "cli" {
-                fmt.Fprintln(os.Stderr,colorGreen + "[+]" + colorReset + " Listener started.")
+                fmt.Fprintln(os.Stderr, colorGreen + "[+]" + colorReset + " Listener started.")
                 } else {
-                    fmt.Fprintln(os.Stderr,colorGreen + "[+]" + colorReset + " Listener started in a new terminal")
+                    fmt.Fprintln(os.Stderr, colorGreen + "[+]" + colorReset + " Listener started in a new terminal")
                     }    
                 }
             }
